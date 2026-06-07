@@ -1,0 +1,36 @@
+version: "3.9"
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: jumble-solver-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - JUMBLE_DICTIONARY_PATH=data/words.txt
+      - JUMBLE_LOG_LEVEL=INFO
+      - JUMBLE_HOST=0.0.0.0
+      - JUMBLE_PORT=8000
+    volumes:
+      - ./backend/data:/app/data:ro
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: jumble-solver-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
